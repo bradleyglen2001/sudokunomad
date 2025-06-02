@@ -143,14 +143,22 @@
             margin-bottom: 15px;
         }
 
-        /* Simplified button grid - 3 columns, 4 rows */
-        .button-grid {
+        /* Desktop layout - 3x3 grid for numbers */
+        .number-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
             gap: 12px;
-            max-width: 300px;
-            margin: 0 auto;
+            margin-bottom: 20px;
+            max-width: 220px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
         }
 
         .input-btn {
@@ -168,25 +176,27 @@
         }
 
         .input-btn.number {
-            background: linear-gradient(135deg, #64748b, #475569);
+            background: linear-gradient(135deg, #8eb4cb, #6b9bc3);
             color: white;
+            box-shadow: 0 4px 12px rgba(107, 155, 195, 0.25);
         }
 
         .input-btn.number:hover {
-            background: linear-gradient(135deg, #475569, #334155);
+            background: linear-gradient(135deg, #6b9bc3, #5a8bb5);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(100, 116, 139, 0.3);
+            box-shadow: 0 6px 16px rgba(107, 155, 195, 0.35);
         }
 
         .input-btn.clear {
-            background: linear-gradient(135deg, #78716c, #57534e);
+            background: linear-gradient(135deg, #a8b5a0, #8fa085);
             color: white;
+            box-shadow: 0 4px 12px rgba(143, 160, 133, 0.25);
         }
 
         .input-btn.clear:hover {
-            background: linear-gradient(135deg, #57534e, #44403c);
+            background: linear-gradient(135deg, #8fa085, #7d8c74);
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(120, 113, 108, 0.3);
+            box-shadow: 0 6px 16px rgba(143, 160, 133, 0.35);
         }
 
         .input-btn:active {
@@ -263,10 +273,17 @@
                 width: 100%;
             }
             
-            .button-grid {
-                grid-template-columns: repeat(3, 1fr);
-                max-width: 300px;
-                margin: 0 auto;
+            /* Switch to single row layout for mobile */
+            .number-row {
+                grid-template-columns: repeat(9, 1fr);
+                grid-template-rows: 1fr;
+                gap: 6px;
+                max-width: 100%;
+                margin-bottom: 15px;
+            }
+            
+            .action-buttons {
+                gap: 20px;
             }
         }
 
@@ -300,16 +317,24 @@
             }
 
             .input-btn {
-                width: 50px;
+                width: 40px;
                 height: 50px;
-                font-size: 20px;
+                font-size: 18px;
                 border-radius: 6px;
             }
 
-            .button-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                max-width: 250px;
+            .number-row {
+                gap: 4px;
+                margin-bottom: 15px;
+            }
+            
+            .action-buttons {
+                gap: 15px;
+            }
+            
+            .action-buttons .input-btn {
+                width: 60px;
+                height: 50px;
             }
         }
 
@@ -321,9 +346,18 @@
             }
 
             .input-btn {
-                width: 45px;
+                width: 35px;
                 height: 45px;
-                font-size: 18px;
+                font-size: 16px;
+            }
+            
+            .number-row {
+                gap: 2px;
+            }
+            
+            .action-buttons .input-btn {
+                width: 50px;
+                height: 45px;
             }
         }
 
@@ -358,29 +392,25 @@
         <div class="game-area">
             <div class="sudoku-grid" id="grid"></div>
             
-            <!-- Simplified input section with aligned button grid -->
+            <!-- Input section with numbers in single row for mobile -->
             <div class="input-section">
-                <div class="button-grid">
-                    <!-- Row 1: Numbers 1-3 -->
+                <!-- Numbers 1-9 in a single row -->
+                <div class="number-row">
                     <button class="input-btn number" onclick="enterNumber(1)" tabindex="0">1</button>
                     <button class="input-btn number" onclick="enterNumber(2)" tabindex="0">2</button>
                     <button class="input-btn number" onclick="enterNumber(3)" tabindex="0">3</button>
-                    
-                    <!-- Row 2: Numbers 4-6 -->
                     <button class="input-btn number" onclick="enterNumber(4)" tabindex="0">4</button>
                     <button class="input-btn number" onclick="enterNumber(5)" tabindex="0">5</button>
                     <button class="input-btn number" onclick="enterNumber(6)" tabindex="0">6</button>
-                    
-                    <!-- Row 3: Numbers 7-9 -->
                     <button class="input-btn number" onclick="enterNumber(7)" tabindex="0">7</button>
                     <button class="input-btn number" onclick="enterNumber(8)" tabindex="0">8</button>
                     <button class="input-btn number" onclick="enterNumber(9)" tabindex="0">9</button>
-                    
-                    <!-- Row 4: Action buttons aligned with numbers above -->
+                </div>
+                
+                <!-- Action buttons below -->
+                <div class="action-buttons">
                     <button class="input-btn clear" onclick="clearSelectedCell()" tabindex="0">✕</button>
                     <button class="input-btn clear" onclick="undoLastMove()" tabindex="0">↶</button>
-                    <!-- Empty cell to maintain 3-column alignment -->
-                    <div></div>
                 </div>
             </div>
         </div>
