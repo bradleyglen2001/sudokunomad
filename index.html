@@ -273,12 +273,12 @@
                 width: 100%;
             }
             
-            /* Switch to single row layout for mobile */
+            /* Switch to single row layout for mobile - match grid width */
             .number-row {
-                grid-template-columns: repeat(9, 1fr);
+                grid-template-columns: repeat(9, 35px);
                 grid-template-rows: 1fr;
-                gap: 6px;
-                max-width: 100%;
+                gap: 1px;
+                max-width: 329px; /* Match sudoku grid width: 35px*9 + 1px*8 + 6px padding */
                 margin-bottom: 15px;
             }
             
@@ -317,15 +317,16 @@
             }
 
             .input-btn {
-                width: 40px;
+                width: 35px;
                 height: 50px;
                 font-size: 18px;
                 border-radius: 6px;
             }
 
             .number-row {
-                gap: 4px;
+                gap: 1px;
                 margin-bottom: 15px;
+                max-width: 329px; /* Match sudoku grid width */
             }
             
             .action-buttons {
@@ -346,13 +347,15 @@
             }
 
             .input-btn {
-                width: 35px;
+                width: 32px;
                 height: 45px;
                 font-size: 16px;
             }
             
             .number-row {
-                gap: 2px;
+                grid-template-columns: repeat(9, 32px);
+                gap: 1px;
+                max-width: 302px; /* Match sudoku grid width: 32px*9 + 1px*8 + 6px padding */
             }
             
             .action-buttons .input-btn {
