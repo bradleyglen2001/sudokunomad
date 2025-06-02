@@ -80,14 +80,20 @@
         }
 
         .cell.user-input {
-            background: #e3f2fd;
-            color: #1976d2;
+            background: #f0f8ff;
+            color: #1565c0;
         }
 
         .cell.error {
             background: #ffebee !important;
             color: #d32f2f !important;
             box-shadow: 0 0 0 2px #f44336 !important;
+        }
+
+        .cell.selected {
+            background: #e3f2fd !important;
+            box-shadow: 0 0 0 3px #2196f3 !important;
+            transform: scale(1.05);
         }
 
         .cell:not(.given):hover {
@@ -154,6 +160,56 @@
             color: #f44336;
         }
 
+        /* Mobile number pad */
+        .number-pad {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .number-pad.show {
+            display: grid;
+        }
+
+        .number-btn {
+            width: 60px;
+            height: 60px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .number-btn:hover {
+            background: #1976d2;
+            transform: scale(1.02);
+        }
+
+        .number-btn:active {
+            transform: scale(0.98);
+        }
+
+        .number-btn.clear {
+            background: #f44336;
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .number-btn.clear:hover {
+            background: #d32f2f;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -177,6 +233,24 @@
             button {
                 width: 200px;
             }
+
+            .number-pad {
+                display: grid;
+            }
+
+            .number-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cell {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -186,6 +260,20 @@
         <div class="difficulty" id="difficulty">Gentle/Very Easy</div>
         
         <div class="sudoku-grid" id="grid"></div>
+        
+        <!-- Mobile number pad -->
+        <div class="number-pad" id="numberPad">
+            <button class="number-btn" onclick="enterNumber(1)">1</button>
+            <button class="number-btn" onclick="enterNumber(2)">2</button>
+            <button class="number-btn" onclick="enterNumber(3)">3</button>
+            <button class="number-btn" onclick="enterNumber(4)">4</button>
+            <button class="number-btn" onclick="enterNumber(5)">5</button>
+            <button class="number-btn" onclick="enterNumber(6)">6</button>
+            <button class="number-btn" onclick="enterNumber(7)">7</button>
+            <button class="number-btn" onclick="enterNumber(8)">8</button>
+            <button class="number-btn" onclick="enterNumber(9)">9</button>
+            <button class="number-btn clear" onclick="clearSelectedCell()">✕</button>
+        </div>
         
         <div class="controls">
             <button onclick="newPuzzle()">New Puzzle</button>
@@ -223,6 +311,7 @@
         let currentPuzzle = null;
         let currentSolution = null;
         let userGrid = [];
+        let selectedCellIndex = -1;
 
         function initGame() {
             newPuzzle();
@@ -238,18 +327,22 @@
             
             createGrid();
             clearStatus();
+            hideNumberPad();
         }
 
         function createGrid() {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             userGrid = new Array(81).fill('');
+            selectedCellIndex = -1;
 
             for (let i = 0; i < 81; i++) {
                 const cell = document.createElement('input');
                 cell.type = 'text';
                 cell.maxLength = 1;
                 cell.className = 'cell';
+                cell.inputMode = 'numeric';
+                cell.pattern = '[1-9]';
                 
                 const row = Math.floor(i / 9);
                 const col = i % 9;
@@ -267,14 +360,98 @@
                     cell.value = puzzleChar;
                     cell.classList.add('given');
                     cell.disabled = true;
-                    // Don't store given numbers in userGrid - keep them separate
                 } else {
                     cell.addEventListener('input', (e) => handleInput(e, i));
                     cell.addEventListener('keydown', (e) => handleKeydown(e, i));
+                    cell.addEventListener('click', (e) => selectCell(i));
+                    cell.addEventListener('focus', (e) => selectCell(i));
                 }
 
                 grid.appendChild(cell);
             }
+        }
+
+        function selectCell(index) {
+            // Clear previous selection
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('selected'));
+            
+            // Select new cell
+            if (currentPuzzle[index] === '.') {
+                selectedCellIndex = index;
+                cells[index].classList.add('selected');
+                showNumberPad();
+            } else {
+                selectedCellIndex = -1;
+                hideNumberPad();
+            }
+        }
+
+        function showNumberPad() {
+            // Show number pad on mobile
+            if (window.innerWidth <= 600) {
+                document.getElementById('numberPad').classList.add('show');
+            }
+        }
+
+        function hideNumberPad() {
+            document.getElementById('numberPad').classList.remove('show');
+        }
+
+        function enterNumber(number) {
+            if (selectedCellIndex >= 0 && currentPuzzle[selectedCellIndex] === '.') {
+                const cells = document.querySelectorAll('.cell');
+                const cell = cells[selectedCellIndex];
+                
+                cell.value = number.toString();
+                userGrid[selectedCellIndex] = number.toString();
+                cell.classList.add('user-input');
+                
+                clearStatus();
+                clearErrorHighlights();
+                
+                // Move to next empty cell
+                moveToNextEmptyCell();
+            }
+        }
+
+        function clearSelectedCell() {
+            if (selectedCellIndex >= 0 && currentPuzzle[selectedCellIndex] === '.') {
+                const cells = document.querySelectorAll('.cell');
+                const cell = cells[selectedCellIndex];
+                
+                cell.value = '';
+                userGrid[selectedCellIndex] = '';
+                cell.classList.remove('user-input');
+                
+                clearStatus();
+                clearErrorHighlights();
+            }
+        }
+
+        function moveToNextEmptyCell() {
+            const cells = document.querySelectorAll('.cell');
+            
+            // Find next empty cell
+            for (let i = selectedCellIndex + 1; i < 81; i++) {
+                if (currentPuzzle[i] === '.') {
+                    selectCell(i);
+                    return;
+                }
+            }
+            
+            // If no cell found after current, search from beginning
+            for (let i = 0; i < selectedCellIndex; i++) {
+                if (currentPuzzle[i] === '.') {
+                    selectCell(i);
+                    return;
+                }
+            }
+            
+            // No empty cells found, hide number pad
+            hideNumberPad();
+            selectedCellIndex = -1;
+            cells.forEach(cell => cell.classList.remove('selected'));
         }
 
         function handleInput(e, index) {
@@ -292,6 +469,9 @@
                     }
                     clearStatus();
                     clearErrorHighlights();
+                    
+                    // Update selected cell
+                    selectedCellIndex = index;
                 }
             } else {
                 // Reset to previous value if invalid input
@@ -308,6 +488,11 @@
                     clearStatus();
                     clearErrorHighlights();
                 }
+            }
+            
+            // Handle number keys
+            if (e.key >= '1' && e.key <= '9') {
+                selectCell(index);
             }
         }
 
@@ -460,6 +645,7 @@
         function resetPuzzle() {
             createGrid();
             clearStatus();
+            hideNumberPad();
         }
 
         function showStatus(message, className) {
@@ -473,6 +659,16 @@
             status.textContent = '';
             status.className = 'status';
         }
+
+        // Hide number pad when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.cell') && !e.target.closest('.number-pad')) {
+                hideNumberPad();
+                selectedCellIndex = -1;
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => cell.classList.remove('selected'));
+            }
+        });
 
         // Initialize the game when page loads
         initGame();
