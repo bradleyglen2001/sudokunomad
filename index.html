@@ -259,119 +259,147 @@
             background: #ffebee;
         }
 
-        /* Responsive design */
+        /* Responsive design - Mobile First Approach */
         @media (max-width: 800px) {
-            .game-area {
-                flex-direction: column;
-                align-items: center;
-                gap: 25px;
-            }
-            
-            .input-section {
-                margin: 25px 0;
-                min-width: auto;
-                width: 100%;
-            }
-            
-            /* Switch to single row layout for mobile - match grid width exactly */
-            .number-row {
-                grid-template-columns: repeat(9, 35px);
-                grid-template-rows: 1fr;
-                gap: 1px;
-                width: 329px; /* Exact match to sudoku grid: 35px*9 + 1px*8 + 3px*2 padding */
-                margin: 0 auto 15px auto; /* Center align */
-                padding: 0 3px; /* Match grid padding */
-                background-color: #333;
-                border-radius: 6px;
-            }
-            
-            .action-buttons {
-                gap: 20px;
-            }
-        }
-
-        @media (max-width: 600px) {
             .container {
-                padding: 20px;
+                padding: 15px;
+                max-width: 100%;
             }
             
             h1 {
-                font-size: 2rem;
+                font-size: 1.8rem;
+                margin-bottom: 8px;
             }
             
+            .difficulty {
+                font-size: 1rem;
+                margin-bottom: 20px;
+            }
+            
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+                gap: 0;
+                margin-bottom: 15px;
+            }
+            
+            /* Sudoku grid for mobile */
             .sudoku-grid {
                 grid-template-columns: repeat(9, 35px);
                 grid-template-rows: repeat(9, 35px);
+                margin-bottom: 20px;
             }
             
             .cell {
                 width: 35px;
                 height: 35px;
-                font-size: 22px;
+                font-size: 20px;
             }
             
-            .controls {
-                flex-direction: column;
-                align-items: center;
+            /* Input section - full width, no side padding */
+            .input-section {
+                margin: 0;
+                padding: 15px 0;
+                background: transparent;
+                box-shadow: none;
+                width: 100%;
             }
             
-            .control-btn {
-                width: 200px;
-            }
-
-            .input-btn {
-                width: 35px;
-                height: 50px;
-                font-size: 18px;
-                border-radius: 2px; /* Match cell border-radius */
-            }
-
+            /* Numbers 1-9 - match grid width exactly */
             .number-row {
+                grid-template-columns: repeat(9, 35px);
+                grid-template-rows: 1fr;
                 gap: 1px;
                 width: 329px; /* Exact match to sudoku grid */
-                margin: 0 auto 15px auto; /* Center align */
-                padding: 0 3px; /* Match grid padding */
+                margin: 0 auto 15px auto;
+                padding: 0 3px;
                 background-color: #333;
                 border-radius: 6px;
             }
             
+            .input-btn {
+                width: 35px;
+                height: 45px;
+                font-size: 18px;
+                border-radius: 2px;
+            }
+            
+            /* Clear/Undo buttons - centered below numbers */
             .action-buttons {
-                gap: 15px;
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin-bottom: 20px;
             }
             
             .action-buttons .input-btn {
-                width: 60px;
-                height: 50px;
+                width: 70px;
+                height: 45px;
+                border-radius: 6px;
+            }
+            
+            /* Control buttons - stack vertically on mobile */
+            .controls {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .control-btn {
+                width: 280px;
+                padding: 14px 24px;
+                font-size: 16px;
+            }
+            
+            .status {
+                font-size: 16px;
+                margin-top: 15px;
             }
         }
 
         @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            /* Smaller grid for very small phones */
+            .sudoku-grid {
+                grid-template-columns: repeat(9, 32px);
+                grid-template-rows: repeat(9, 32px);
+            }
+            
             .cell {
                 width: 32px;
                 height: 32px;
-                font-size: 14px;
-            }
-
-            .input-btn {
-                width: 32px;
-                height: 45px;
-                font-size: 16px;
-                border-radius: 2px; /* Match cell border-radius */
+                font-size: 18px;
             }
             
+            /* Adjust number buttons to match smaller grid */
             .number-row {
                 grid-template-columns: repeat(9, 32px);
-                gap: 1px;
-                width: 302px; /* Exact match to sudoku grid: 32px*9 + 1px*8 + 3px*2 padding */
-                margin: 0 auto 15px auto; /* Center align */
-                padding: 0 3px; /* Match grid padding */
-                background-color: #333;
-                border-radius: 6px;
+                width: 302px; /* 32px*9 + 1px*8 + 3px*2 padding */
+            }
+            
+            .input-btn {
+                width: 32px;
+                height: 42px;
+                font-size: 16px;
             }
             
             .action-buttons .input-btn {
-                width: 50px;
-                height: 45px;
+                width: 65px;
+                height: 42px;
+            }
+            
+            .control-btn {
+                width: 260px;
+                padding: 12px 20px;
+                font-size: 15px;
             }
         }
 
