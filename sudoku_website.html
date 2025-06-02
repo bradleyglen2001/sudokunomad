@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .difficulty {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            gap: 2px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 0 auto 30px;
+            width: fit-content;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            border: none;
+            outline: none;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .cell.given {
+            background: #f8f9fa;
+            color: #495057;
+            cursor: default;
+        }
+
+        .cell.user-input {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .cell:not(.given):hover {
+            background: #f0f8ff;
+            transform: scale(1.05);
+        }
+
+        .cell:not(.given):focus {
+            background: #e3f2fd;
+            box-shadow: 0 0 0 2px #2196f3;
+        }
+
+        .cell.thick-right {
+            border-right: 3px solid #333;
+        }
+
+        .cell.thick-bottom {
+            border-bottom: 3px solid #333;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background: #2d3748;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            min-height: 25px;
+        }
+
+        .success {
+            color: #4caf50;
+        }
+
+        .error {
+            color: #f44336;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sudoku</h1>
+        <div class="difficulty" id="difficulty">Gentle/Very Easy</div>
+        
+        <div class="sudoku-grid" id="grid"></div>
+        
+        <div class="controls">
+            <button onclick="newPuzzle()">New Puzzle</button>
+            <button onclick="checkSolution()">Check Solution</button>
+            <button onclick="showHint()">Hint</button>
+            <button onclick="resetPuzzle()">Reset</button>
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        // Sudoku puzzles data
+        const puzzles = [
+            {
+                solution: "956271483173854692824369751482137965635982147719645238268793514347516829591428376",
+                puzzle: ".5..7.4.3.7........2...97.........6.63.9.2.4...9..5.....87.....347...8.9....28..6",
+                grade: "Gentle/Very Easy",
+                difficulty: "Drifter"
+            },
+            {
+                solution: "873924156951786432426531978298347561735169284614258793342875619569413827187692345",
+                puzzle: "......15....78..3.4.653.9.8......56.73......4.1...8...3........569...8.7.....2...",
+                grade: "Gentle/Very Easy",
+                difficulty: "Drifter"
+            },
+            {
+                solution: "456127893871943562293568471724659318519382746368714925187436259935271684642895137",
+                puzzle: "...1.....8...4.56.29.5.....7.......8...3.2.4..6..14..........5...5.7.684.4..9.1.7",
+                grade: "Gentle/Very Easy",
+                difficulty: "Drifter"
+            }
+        ];
+
+        let currentPuzzle = null;
+        let currentSolution = null;
+        let userGrid = [];
+
+        function initGame() {
+            newPuzzle();
+        }
+
+        function newPuzzle() {
+            const randomIndex = Math.floor(Math.random() * puzzles.length);
+            const puzzle = puzzles[randomIndex];
+            currentPuzzle = puzzle.puzzle;
+            currentSolution = puzzle.solution;
+            
+            document.getElementById('difficulty').textContent = puzzle.grade + ' - ' + puzzle.difficulty;
+            
+            createGrid();
+            clearStatus();
+        }
+
+        function createGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+            userGrid = new Array(81).fill('');
+
+            for (let i = 0; i < 81; i++) {
+                const cell = document.createElement('input');
+                cell.type = 'text';
+                cell.maxLength = 1;
+                cell.className = 'cell';
+                
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                
+                // Add thick borders for 3x3 boxes
+                if (col === 2 || col === 5) {
+                    cell.classList.add('thick-right');
+                }
+                if (row === 2 || row === 5) {
+                    cell.classList.add('thick-bottom');
+                }
+
+                const puzzleChar = currentPuzzle[i];
+                if (puzzleChar !== '.') {
+                    cell.value = puzzleChar;
+                    cell.classList.add('given');
+                    cell.disabled = true;
+                    // Don't store given numbers in userGrid - keep them separate
+                } else {
+                    cell.addEventListener('input', (e) => handleInput(e, i));
+                    cell.addEventListener('keydown', (e) => handleKeydown(e, i));
+                }
+
+                grid.appendChild(cell);
+            }
+        }
+
+        function handleInput(e, index) {
+            const value = e.target.value;
+            
+            // Only allow numbers 1-9 or empty
+            if (value === '' || (value >= '1' && value <= '9')) {
+                // Only update if this is an empty cell in the original puzzle
+                if (currentPuzzle[index] === '.') {
+                    userGrid[index] = value;
+                    if (value !== '') {
+                        e.target.classList.add('user-input');
+                    } else {
+                        e.target.classList.remove('user-input');
+                    }
+                    clearStatus();
+                }
+            } else {
+                // Reset to previous value if invalid input
+                e.target.value = userGrid[index] || '';
+            }
+        }
+
+        function handleKeydown(e, index) {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                // Only clear if this is an empty cell in the original puzzle
+                if (currentPuzzle[index] === '.') {
+                    userGrid[index] = '';
+                    e.target.classList.remove('user-input');
+                    clearStatus();
+                }
+            }
+        }
+
+        function checkSolution() {
+            // Get all cell values from the actual DOM elements
+            const cells = document.querySelectorAll('.cell');
+            const userGrid = [];
+            let hasEmptyCells = false;
+            let emptyCellCount = 0;
+            let wrongCells = 0;
+            
+            console.log('=== DEBUGGING SOLUTION CHECK ===');
+            console.log('Target solution:', currentSolution);
+            
+            for (let i = 0; i < 81; i++) {
+                const cellValue = cells[i].value;
+                const correctValue = currentSolution[i];
+                const row = Math.floor(i / 9) + 1;
+                const col = (i % 9) + 1;
+                
+                if (cellValue && cellValue !== '') {
+                    userGrid[i] = cellValue;
+                    if (cellValue !== correctValue) {
+                        wrongCells++;
+                        console.log(`Position ${i} (row ${row}, col ${col}): USER=${cellValue}, CORRECT=${correctValue} ❌`);
+                    } else {
+                        console.log(`Position ${i} (row ${row}, col ${col}): USER=${cellValue}, CORRECT=${correctValue} ✅`);
+                    }
+                } else {
+                    userGrid[i] = '';
+                    hasEmptyCells = true;
+                    emptyCellCount++;
+                    console.log(`Position ${i} (row ${row}, col ${col}): EMPTY (should be ${correctValue})`);
+                }
+            }
+            
+            console.log(`Empty cells: ${emptyCellCount}, Wrong cells: ${wrongCells}`);
+            
+            // Check results
+            if (hasEmptyCells) {
+                showStatus(`🔍 Keep going! ${emptyCellCount} cells remaining`, '');
+            } else if (wrongCells > 0) {
+                showStatus(`❌ ${wrongCells} incorrect cells - check your work!`, 'error');
+            } else {
+                showStatus('🎉 Congratulations! You solved it perfectly!', 'success');
+            }
+        }
+
+        function findConflicts(grid) {
+            const conflicts = [];
+            
+            // Check rows, columns, and 3x3 boxes for duplicates
+            for (let i = 0; i < 9; i++) {
+                // Check row
+                const row = [];
+                for (let j = 0; j < 9; j++) {
+                    const val = grid[i * 9 + j];
+                    if (val && val !== '' && row.includes(val)) {
+                        conflicts.push(i * 9 + j);
+                    }
+                    if (val && val !== '') row.push(val);
+                }
+                
+                // Check column
+                const col = [];
+                for (let j = 0; j < 9; j++) {
+                    const val = grid[j * 9 + i];
+                    if (val && val !== '' && col.includes(val)) {
+                        conflicts.push(j * 9 + i);
+                    }
+                    if (val && val !== '') col.push(val);
+                }
+            }
+            
+            // Check 3x3 boxes
+            for (let boxRow = 0; boxRow < 3; boxRow++) {
+                for (let boxCol = 0; boxCol < 3; boxCol++) {
+                    const box = [];
+                    for (let row = 0; row < 3; row++) {
+                        for (let col = 0; col < 3; col++) {
+                            const index = (boxRow * 3 + row) * 9 + (boxCol * 3 + col);
+                            const val = grid[index];
+                            if (val && val !== '' && box.includes(val)) {
+                                conflicts.push(index);
+                            }
+                            if (val && val !== '') box.push(val);
+                        }
+                    }
+                }
+            }
+            
+            return conflicts;
+        }
+
+        function showHint() {
+            const emptyCells = [];
+            for (let i = 0; i < 81; i++) {
+                if (userGrid[i] === '') {
+                    emptyCells.push(i);
+                }
+            }
+            
+            if (emptyCells.length > 0) {
+                const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const cells = document.querySelectorAll('.cell');
+                const hintCell = cells[randomIndex];
+                const hintValue = currentSolution[randomIndex];
+                
+                hintCell.value = hintValue;
+                userGrid[randomIndex] = hintValue;
+                hintCell.classList.add('user-input');
+                
+                showStatus('💡 Hint added!', '');
+            } else {
+                showStatus('🎯 No empty cells to hint!', '');
+            }
+        }
+
+        function resetPuzzle() {
+            createGrid();
+            clearStatus();
+        }
+
+        function showStatus(message, className) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + className;
+        }
+
+        function clearStatus() {
+            const status = document.getElementById('status');
+            status.textContent = '';
+            status.className = 'status';
+        }
+
+        // Initialize the game when page loads
+        initGame();
+    </script>
+</body>
+</html>
