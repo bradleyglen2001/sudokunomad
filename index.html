@@ -84,6 +84,12 @@
             color: #1976d2;
         }
 
+        .cell.error {
+            background: #ffebee !important;
+            color: #d32f2f !important;
+            box-shadow: 0 0 0 2px #f44336 !important;
+        }
+
         .cell:not(.given):hover {
             background: #f0f8ff;
             transform: scale(1.05);
@@ -285,6 +291,7 @@
                         e.target.classList.remove('user-input');
                     }
                     clearStatus();
+                    clearErrorHighlights();
                 }
             } else {
                 // Reset to previous value if invalid input
@@ -299,99 +306,130 @@
                     userGrid[index] = '';
                     e.target.classList.remove('user-input');
                     clearStatus();
+                    clearErrorHighlights();
                 }
             }
         }
 
-        function checkSolution() {
-            // Get all cell values from the actual DOM elements
+        function getCurrentGrid() {
             const cells = document.querySelectorAll('.cell');
-            const userGrid = [];
-            let hasEmptyCells = false;
-            let emptyCellCount = 0;
-            let wrongCells = 0;
-            
-            console.log('=== DEBUGGING SOLUTION CHECK ===');
-            console.log('Target solution:', currentSolution);
+            const grid = [];
             
             for (let i = 0; i < 81; i++) {
                 const cellValue = cells[i].value;
-                const correctValue = currentSolution[i];
-                const row = Math.floor(i / 9) + 1;
-                const col = (i % 9) + 1;
-                
-                if (cellValue && cellValue !== '') {
-                    userGrid[i] = cellValue;
-                    if (cellValue !== correctValue) {
-                        wrongCells++;
-                        console.log(`Position ${i} (row ${row}, col ${col}): USER=${cellValue}, CORRECT=${correctValue} ❌`);
-                    } else {
-                        console.log(`Position ${i} (row ${row}, col ${col}): USER=${cellValue}, CORRECT=${correctValue} ✅`);
-                    }
-                } else {
-                    userGrid[i] = '';
-                    hasEmptyCells = true;
-                    emptyCellCount++;
-                    console.log(`Position ${i} (row ${row}, col ${col}): EMPTY (should be ${correctValue})`);
-                }
+                grid[i] = cellValue || '';
             }
             
-            console.log(`Empty cells: ${emptyCellCount}, Wrong cells: ${wrongCells}`);
-            
-            // Check results
-            if (hasEmptyCells) {
-                showStatus(`🔍 Keep going! ${emptyCellCount} cells remaining`, '');
-            } else if (wrongCells > 0) {
-                showStatus(`❌ ${wrongCells} incorrect cells - check your work!`, 'error');
-            } else {
-                showStatus('🎉 Congratulations! You solved it perfectly!', 'success');
-            }
+            return grid;
         }
 
         function findConflicts(grid) {
-            const conflicts = [];
+            const conflicts = new Set();
             
-            // Check rows, columns, and 3x3 boxes for duplicates
-            for (let i = 0; i < 9; i++) {
-                // Check row
-                const row = [];
-                for (let j = 0; j < 9; j++) {
-                    const val = grid[i * 9 + j];
-                    if (val && val !== '' && row.includes(val)) {
-                        conflicts.push(i * 9 + j);
+            // Check rows
+            for (let row = 0; row < 9; row++) {
+                const seen = {};
+                for (let col = 0; col < 9; col++) {
+                    const index = row * 9 + col;
+                    const val = grid[index];
+                    if (val && val !== '') {
+                        if (seen[val]) {
+                            conflicts.add(index);
+                            conflicts.add(seen[val]);
+                        } else {
+                            seen[val] = index;
+                        }
                     }
-                    if (val && val !== '') row.push(val);
                 }
-                
-                // Check column
-                const col = [];
-                for (let j = 0; j < 9; j++) {
-                    const val = grid[j * 9 + i];
-                    if (val && val !== '' && col.includes(val)) {
-                        conflicts.push(j * 9 + i);
+            }
+            
+            // Check columns
+            for (let col = 0; col < 9; col++) {
+                const seen = {};
+                for (let row = 0; row < 9; row++) {
+                    const index = row * 9 + col;
+                    const val = grid[index];
+                    if (val && val !== '') {
+                        if (seen[val]) {
+                            conflicts.add(index);
+                            conflicts.add(seen[val]);
+                        } else {
+                            seen[val] = index;
+                        }
                     }
-                    if (val && val !== '') col.push(val);
                 }
             }
             
             // Check 3x3 boxes
             for (let boxRow = 0; boxRow < 3; boxRow++) {
                 for (let boxCol = 0; boxCol < 3; boxCol++) {
-                    const box = [];
+                    const seen = {};
                     for (let row = 0; row < 3; row++) {
                         for (let col = 0; col < 3; col++) {
                             const index = (boxRow * 3 + row) * 9 + (boxCol * 3 + col);
                             const val = grid[index];
-                            if (val && val !== '' && box.includes(val)) {
-                                conflicts.push(index);
+                            if (val && val !== '') {
+                                if (seen[val]) {
+                                    conflicts.add(index);
+                                    conflicts.add(seen[val]);
+                                } else {
+                                    seen[val] = index;
+                                }
                             }
-                            if (val && val !== '') box.push(val);
                         }
                     }
                 }
             }
             
-            return conflicts;
+            return Array.from(conflicts);
+        }
+
+        function highlightErrors(errorCells) {
+            const cells = document.querySelectorAll('.cell');
+            errorCells.forEach(index => {
+                cells[index].classList.add('error');
+            });
+        }
+
+        function clearErrorHighlights() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('error');
+            });
+        }
+
+        function checkSolution() {
+            clearErrorHighlights();
+            
+            const currentGrid = getCurrentGrid();
+            const conflicts = findConflicts(currentGrid);
+            
+            let hasEmptyCells = false;
+            let emptyCellCount = 0;
+            
+            // Count empty cells
+            for (let i = 0; i < 81; i++) {
+                if (currentGrid[i] === '') {
+                    hasEmptyCells = true;
+                    emptyCellCount++;
+                }
+            }
+            
+            // Check for conflicts first (Sudoku rule violations)
+            if (conflicts.length > 0) {
+                highlightErrors(conflicts);
+                showStatus(`❌ Found ${conflicts.length} conflicting cells! Check highlighted numbers.`, 'error');
+                return;
+            }
+            
+            // Check if puzzle is complete
+            if (hasEmptyCells) {
+                showStatus(`🔍 Keep going! ${emptyCellCount} cells remaining`, '');
+                return;
+            }
+            
+            // If no conflicts and no empty cells, puzzle is solved!
+            showStatus('🎉 Congratulations! You solved it perfectly!', 'success');
         }
 
         function showHint() {
@@ -413,6 +451,7 @@
                 hintCell.classList.add('user-input');
                 
                 showStatus('💡 Hint added!', '');
+                clearErrorHighlights();
             } else {
                 showStatus('🎯 No empty cells to hint!', '');
             }
