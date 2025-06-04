@@ -2,580 +2,642 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sudoku Puzzle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Sudoku - iPhone Edition</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        :root {
+            --primary-blue: #007AFF;
+            --secondary-blue: #0051D5;
+            --light-gray: #F2F2F7;
+            --medium-gray: #E5E5EA;
+            --dark-gray: #8E8E93;
+            --text-primary: #000000;
+            --text-secondary: #3C3C43;
+            --error-red: #FF3B30;
+            --success-green: #34C759;
+            --warning-orange: #FF9500;
+            --cell-size: min(45px, calc((100vw - 48px) / 9));
+            --gap-size: 1px;
+            --thick-border: 3px;
+            --box-border: #2C2C2E;
+        }
+
+        /* Desktop responsive sizing */
+        @media (min-width: 768px) {
+            :root {
+                --cell-size: min(60px, calc((100vh - 200px) / 9));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            :root {
+                --cell-size: min(70px, calc((100vh - 250px) / 9));
+            }
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background: #FFFFFF;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
         }
 
         .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
             text-align: center;
-            max-width: 900px;
-            width: 100%;
-            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2.5rem;
+            font-size: 34px;
             font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
         }
 
         .difficulty {
-            color: #666;
-            margin-bottom: 25px;
-            font-size: 1.1rem;
+            color: var(--dark-gray);
+            font-size: 15px;
+            font-weight: 400;
         }
 
-        /* Game area layout for desktop */
-        .game-area {
+        /* Main game wrapper */
+        .game-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 24px;
+        }
+
+        /* Sudoku Grid Container */
+        .grid-container {
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            gap: 40px;
-            margin-bottom: 25px;
+            padding: 0 16px;
         }
 
         .sudoku-grid {
             display: grid;
-            grid-template-columns: repeat(9, 45px);
-            grid-template-rows: repeat(9, 45px);
-            gap: 1px;
-            background-color: #333;
+            grid-template-columns: repeat(9, var(--cell-size));
+            grid-template-rows: repeat(9, var(--cell-size));
+            gap: var(--gap-size);
+            background-color: var(--box-border);
             padding: 3px;
-            border-radius: 6px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            position: relative;
         }
 
         .cell {
-            width: 45px;
-            height: 45px;
+            width: var(--cell-size);
+            height: var(--cell-size);
             background: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
-            font-weight: 600;
-            color: #333;
+            font-size: min(28px, calc(var(--cell-size) * 0.6));
+            font-weight: 500;
+            color: var(--text-primary);
             border: none;
             outline: none;
-            transition: all 0.3s ease;
-            text-align: center;
+            position: relative;
+            transition: all 0.15s ease;
             cursor: pointer;
-            border-radius: 2px;
+            border: 1px solid var(--medium-gray);
         }
 
         .cell.given {
-            background: #f8f9fa;
-            color: #495057;
-            font-weight: 700;
+            background: var(--light-gray);
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: default;
         }
 
         .cell.user-input {
-            background: #e8f4fd;
-            color: #1565c0;
-        }
-
-        .cell.last-input {
-            background: #fff3e0 !important;
-            color: #e65100 !important;
-            box-shadow: 0 0 0 2px #ff9800 !important;
-            transform: scale(1.05);
-        }
-
-        .cell.error {
-            background: #ffebee !important;
-            color: #d32f2f !important;
-            box-shadow: 0 0 0 2px #f44336 !important;
+            color: var(--primary-blue);
+            font-weight: 500;
         }
 
         .cell.selected {
-            background: #e3f2fd !important;
-            box-shadow: 0 0 0 3px #2196f3 !important;
-            transform: scale(1.08);
-        }
-
-        .cell:not(.given):hover {
-            background: #f0f8ff;
+            background: #E3F2FD !important;
+            box-shadow: inset 0 0 0 2px var(--primary-blue);
+            z-index: 10;
             transform: scale(1.05);
         }
 
-        /* 3x3 box separators */
-        .cell.thick-right {
-            border-right: 2px solid #333;
+        .cell.highlight-same {
+            background: #F5F5F5;
         }
 
-        .cell.thick-bottom {
-            border-bottom: 2px solid #333;
+        .cell.error {
+            background: #FFEBEE !important;
+            color: var(--error-red) !important;
+            animation: shake 0.3s ease-in-out;
         }
 
-        /* Input pad - always visible */
-        .input-section {
-            margin: 25px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 15px;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
         }
 
-        .input-label {
-            font-size: 16px;
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 15px;
+        /* 3x3 box visual separation */
+        /* Right borders for vertical separators (after columns 3 and 6) */
+        .cell:nth-child(3n):not(.cell:nth-child(9n)) {
+            border-right: var(--thick-border) solid var(--box-border);
         }
 
-        /* Desktop layout - 3x3 grid for numbers */
-        .number-row {
+        /* Bottom borders for horizontal separators (after rows 3 and 6) */
+        .cell:nth-child(n+19):nth-child(-n+27) {
+            border-bottom: var(--thick-border) solid var(--box-border);
+        }
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: var(--thick-border) solid var(--box-border);
+        }
+
+        /* Input Section */
+        .input-container {
+            padding: 0 16px;
+        }
+
+        .number-pad {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-            max-width: 220px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
+            grid-template-columns: repeat(9, 1fr);
+            gap: var(--gap-size);
+            background-color: var(--text-secondary);
+            padding: 2px;
+            border-radius: 12px;
+            margin-bottom: 12px;
         }
 
-        .input-btn {
-            width: 60px;
-            height: 60px;
+        .number-btn {
+            aspect-ratio: 1;
             border: none;
+            background: var(--light-gray);
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
             border-radius: 8px;
-            font-size: 24px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .input-btn.number {
-            background: linear-gradient(135deg, #8eb4cb, #6b9bc3);
-            color: white;
-            box-shadow: 0 4px 12px rgba(107, 155, 195, 0.25);
-        }
-
-        .input-btn.number:hover {
-            background: linear-gradient(135deg, #6b9bc3, #5a8bb5);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(107, 155, 195, 0.35);
-        }
-
-        .input-btn.clear {
-            background: linear-gradient(135deg, #a8b5a0, #8fa085);
-            color: white;
-            box-shadow: 0 4px 12px rgba(143, 160, 133, 0.25);
-        }
-
-        .input-btn.clear:hover {
-            background: linear-gradient(135deg, #8fa085, #7d8c74);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(143, 160, 133, 0.35);
-        }
-
-        .input-btn:active {
-            transform: translateY(0);
-        }
-
-        .input-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .controls {
             display: flex;
-            gap: 15px;
+            align-items: center;
             justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+            transition: all 0.15s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .number-btn:active:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .number-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 14px;
+            border: none;
+            background: var(--light-gray);
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .action-btn:active:not(:disabled) {
+            background: var(--medium-gray);
+            transform: scale(0.98);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Control buttons - fixed spacing */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 0 16px;
+            margin-top: 24px;
         }
 
         .control-btn {
-            background: linear-gradient(135deg, #4a5568, #2d3748);
-            color: white;
+            padding: 16px;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
+            background: var(--primary-blue);
+            color: white;
+            border-radius: 12px;
+            font-size: 17px;
             font-weight: 600;
+            transition: all 0.15s ease;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .control-btn:hover {
-            background: linear-gradient(135deg, #2d3748, #1a202c);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
         .control-btn:active {
+            background: var(--secondary-blue);
+            transform: scale(0.98);
+        }
+
+        .control-btn.secondary {
+            background: var(--light-gray);
+            color: var(--primary-blue);
+        }
+
+        .control-btn.secondary:active {
+            background: var(--medium-gray);
+        }
+
+        /* Status bar */
+        .status-bar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0);
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--medium-gray);
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .status-bar.show {
             transform: translateY(0);
         }
 
-        .status {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: 600;
-            min-height: 25px;
-            padding: 10px;
-            border-radius: 8px;
+        .status-bar.success {
+            background: rgba(52, 199, 89, 0.95);
+            color: white;
         }
 
-        .status.success {
-            color: #2e7d32;
-            background: #e8f5e8;
+        .status-bar.error {
+            background: rgba(255, 59, 48, 0.95);
+            color: white;
         }
 
-        .status.error {
-            color: #d32f2f;
-            background: #ffebee;
-        }
-
-        /* Responsive design - Mobile First Approach */
-        @media (max-width: 800px) {
+        /* Landscape adjustments */
+        @media (orientation: landscape) and (max-height: 500px) {
             .container {
-                padding: 15px;
-                max-width: 100%;
+                padding-top: 10px;
+            }
+            
+            .header {
+                margin-bottom: 10px;
             }
             
             h1 {
-                font-size: 1.8rem;
-                margin-bottom: 8px;
+                font-size: 24px;
             }
             
-            .difficulty {
-                font-size: 1rem;
-                margin-bottom: 20px;
-            }
-            
-            .game-area {
-                flex-direction: column;
-                align-items: center;
-                gap: 0;
-                margin-bottom: 15px;
-            }
-            
-            /* Sudoku grid for mobile - ensure perfect centering */
-            .sudoku-grid {
-                grid-template-columns: repeat(9, 35px);
-                grid-template-rows: repeat(9, 35px);
-                margin: 0 auto 20px auto;
-                justify-self: center;
-            }
-            
-            .cell {
-                width: 35px;
-                height: 35px;
-                font-size: 20px;
-            }
-            
-            /* Input section - full width, no side padding */
-            .input-section {
-                margin: 0;
-                padding: 15px 0;
-                background: transparent;
-                box-shadow: none;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            /* Numbers 1-9 - match grid width exactly and center perfectly */
-            .number-row {
-                grid-template-columns: repeat(9, 35px);
-                grid-template-rows: 1fr;
-                gap: 1px;
-                width: 329px; /* Exact match to sudoku grid */
-                margin: 0 auto 15px auto;
-                padding: 0 3px;
-                background-color: #333;
-                border-radius: 6px;
-                justify-self: center;
-                display: grid;
-            }
-            
-            .input-btn {
-                width: 35px;
-                height: 45px;
-                font-size: 18px;
-                border-radius: 2px;
-            }
-            
-            /* Clear/Undo buttons - centered below numbers */
-            .action-buttons {
-                display: flex;
+            .game-wrapper {
+                flex-direction: row;
+                align-items: flex-start;
                 justify-content: center;
                 gap: 20px;
-                margin-bottom: 20px;
             }
             
-            .action-buttons .input-btn {
-                width: 70px;
-                height: 45px;
-                border-radius: 6px;
+            .grid-container {
+                flex: 0 0 auto;
             }
             
-            /* Control buttons - stack vertically on mobile */
+            .input-container {
+                flex: 0 0 200px;
+            }
+            
             .controls {
-                flex-direction: column;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 15px;
-            }
-            
-            .control-btn {
-                width: 280px;
-                padding: 14px 24px;
-                font-size: 16px;
-            }
-            
-            .status {
-                font-size: 16px;
-                margin-top: 15px;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin-top: 0;
+                padding: 10px 16px env(safe-area-inset-bottom, 10px);
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid var(--medium-gray);
             }
         }
 
-        @media (max-width: 480px) {
+        /* Desktop enhancements */
+        @media (min-width: 768px) {
             .container {
-                padding: 10px;
+                max-width: 900px;
+                padding: 30px 24px;
+            }
+            
+            .header {
+                margin-bottom: 30px;
             }
             
             h1 {
-                font-size: 1.6rem;
+                font-size: 42px;
             }
             
-            /* Smaller grid for very small phones */
-            .sudoku-grid {
-                grid-template-columns: repeat(9, 32px);
-                grid-template-rows: repeat(9, 32px);
-                margin: 0 auto 20px auto;
-                justify-self: center;
+            .game-wrapper {
+                gap: 32px;
             }
             
-            .cell {
-                width: 32px;
-                height: 32px;
-                font-size: 18px;
+            .number-pad {
+                margin-bottom: 16px;
             }
             
-            /* Adjust number buttons to match smaller grid */
-            .number-row {
-                grid-template-columns: repeat(9, 32px);
-                width: 302px; /* 32px*9 + 1px*8 + 3px*2 padding */
-                margin: 0 auto 15px auto;
-                padding: 0 3px;
-                background-color: #333;
-                border-radius: 6px;
-                justify-self: center;
-                display: grid;
+            .number-btn {
+                font-size: 24px;
             }
             
-            .input-btn {
-                width: 32px;
-                height: 42px;
-                font-size: 16px;
-            }
-            
-            .action-buttons .input-btn {
-                width: 65px;
-                height: 42px;
-            }
-            
-            .control-btn {
-                width: 260px;
-                padding: 12px 20px;
-                font-size: 15px;
+            .controls {
+                max-width: 400px;
+                margin: 32px auto 0;
+                grid-template-columns: repeat(4, 1fr);
             }
         }
 
-        /* Keyboard focus styles */
-        .cell:focus-visible {
-            outline: 3px solid #2196f3;
-            outline-offset: 2px;
+        /* Responsive adjustments */
+        @media (min-width: 375px) {
+            :root {
+                --cell-size: min(47px, calc((100vw - 48px) / 9));
+            }
         }
 
-        .input-btn:focus-visible {
-            outline: 3px solid #2196f3;
-            outline-offset: 2px;
+        @media (min-width: 414px) {
+            :root {
+                --cell-size: 45px;
+            }
         }
 
-        /* Animation for new input */
-        @keyframes inputPulse {
-            0% { transform: scale(1.05); }
-            50% { transform: scale(1.15); }
-            100% { transform: scale(1.05); }
+        /* Haptic feedback simulation */
+        @keyframes haptic {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.97); }
+            100% { transform: scale(1); }
         }
 
-        .cell.last-input {
-            animation: inputPulse 0.3s ease-in-out;
+        .haptic {
+            animation: haptic 0.1s ease-in-out;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Sudoku</h1>
-        <div class="difficulty" id="difficulty">Gentle/Very Easy</div>
-        
-        <div class="game-area">
-            <div class="sudoku-grid" id="grid"></div>
-            
-            <!-- Input section with numbers in single row for mobile -->
-            <div class="input-section">
-                <!-- Numbers 1-9 in a single row -->
-                <div class="number-row">
-                    <button class="input-btn number" onclick="enterNumber(1)" tabindex="0">1</button>
-                    <button class="input-btn number" onclick="enterNumber(2)" tabindex="0">2</button>
-                    <button class="input-btn number" onclick="enterNumber(3)" tabindex="0">3</button>
-                    <button class="input-btn number" onclick="enterNumber(4)" tabindex="0">4</button>
-                    <button class="input-btn number" onclick="enterNumber(5)" tabindex="0">5</button>
-                    <button class="input-btn number" onclick="enterNumber(6)" tabindex="0">6</button>
-                    <button class="input-btn number" onclick="enterNumber(7)" tabindex="0">7</button>
-                    <button class="input-btn number" onclick="enterNumber(8)" tabindex="0">8</button>
-                    <button class="input-btn number" onclick="enterNumber(9)" tabindex="0">9</button>
+        <div class="header">
+            <h1>Sudoku</h1>
+            <div class="difficulty" id="difficulty">Easy</div>
+        </div>
+
+        <div class="game-wrapper">
+            <div class="grid-container">
+                <div class="sudoku-grid" id="grid"></div>
+            </div>
+
+            <div class="input-container">
+                <div class="number-pad" id="numberPad">
+                    <!-- Numbers 1-9 will be generated by JS -->
                 </div>
                 
-                <!-- Action buttons below -->
-                <div class="action-buttons">
-                    <button class="input-btn clear" onclick="clearSelectedCell()" tabindex="0">✕</button>
-                    <button class="input-btn clear" onclick="undoLastMove()" tabindex="0">↶</button>
+                <div class="action-row">
+                    <button class="action-btn" id="clearBtn" disabled>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Clear
+                    </button>
+                    <button class="action-btn" id="undoBtn" disabled>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                        Undo
+                    </button>
                 </div>
             </div>
         </div>
-        
+
         <div class="controls">
-            <button class="control-btn" onclick="newPuzzle()">New Puzzle</button>
-            <button class="control-btn" onclick="checkSolution()">Check Solution</button>
-            <button class="control-btn" onclick="showHint()">Hint</button>
-            <button class="control-btn" onclick="resetPuzzle()">Reset</button>
+            <button class="control-btn" id="newGameBtn">New Game</button>
+            <button class="control-btn secondary" id="checkBtn">Check</button>
+            <button class="control-btn secondary" id="hintBtn">Hint</button>
+            <button class="control-btn secondary" id="resetBtn">Reset</button>
         </div>
-        
-        <div class="status" id="status"></div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+        <span id="statusText"></span>
     </div>
 
     <script>
-        // Sudoku puzzles data
-        let puzzles = [];
+        // Game state
         let currentPuzzle = null;
         let currentSolution = null;
         let userGrid = [];
-        let selectedCellIndex = -1;
-        let lastInputCellIndex = -1;
-        let moveHistory = []; // For undo functionality
+        let selectedCell = -1;
+        let moveHistory = [];
+        let highlightedCells = new Set();
+        let puzzles = [];
+        let currentPuzzleData = null;
 
-        // Load puzzles from external JSON file or use fallback
+        // Load puzzles from external JSON file
         async function loadPuzzles() {
             try {
+                console.log('Attempting to load puzzles from puzzles.json...');
                 const response = await fetch('puzzles.json');
+                
                 if (!response.ok) {
-                    throw new Error('Failed to load puzzles');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
                 puzzles = await response.json();
-                console.log(`Loaded ${puzzles.length} puzzles`);
+                console.log(`✅ Successfully loaded ${puzzles.length} puzzles from puzzles.json`);
+                console.log('Puzzle grades available:', [...new Set(puzzles.map(p => p.grade))]);
+                console.log('Puzzle difficulties available:', [...new Set(puzzles.map(p => p.difficulty))]);
+                
+                return true;
             } catch (error) {
-                console.error('Error loading puzzles:', error);
-                // Fallback to embedded puzzles if file fails to load
+                console.error('❌ Failed to load puzzles.json:', error);
+                console.log('Using fallback puzzles instead...');
+                
+                // Fallback puzzles if JSON file fails to load
                 puzzles = [
                     {
-                        solution: "956271483173854692824369751482137965635982147719645238268793514347516829591428376",
                         puzzle: ".5..7.4.3.7........2...97.........6.63.9.2.4...9..5.....87.....347...8.9....28..6",
+                        solution: "956271483173854692824369751482137965635982147719645238268793514347516829591428376",
                         grade: "Gentle/Very Easy",
                         difficulty: "Drifter"
                     },
                     {
-                        solution: "873924156951786432426531978298347561735169284614258793342875619569413827187692345",
                         puzzle: "......15....78..3.4.653.9.8......56.73......4.1...8...3........569...8.7.....2...",
+                        solution: "873924156951786432426531978298347561735169284614258793342875619569413827187692345",
                         grade: "Gentle/Very Easy",
                         difficulty: "Drifter"
                     },
                     {
-                        solution: "456127893871943562293568471724659318519382746368714925187436259935271684642895137",
                         puzzle: "...1.....8...4.56.29.5.....7.......8...3.2.4..6..14..........5...5.7.684.4..9.1.7",
+                        solution: "456127893871943562293568471724659318519382746368714925187436259935271684642895137",
                         grade: "Gentle/Very Easy",
                         difficulty: "Drifter"
                     }
                 ];
+                console.log(`Loaded ${puzzles.length} fallback puzzles`);
+                return false;
             }
         }
 
-        async function initGame() {
+        // Initialize game
+        async function init() {
+            createNumberPad();
+            setupEventListeners();
+            
+            // Load puzzles first, then start a new game
             await loadPuzzles();
-            newPuzzle();
-            updateInputButtons();
+            newGame();
         }
 
-        function newPuzzle() {
-            const randomIndex = Math.floor(Math.random() * puzzles.length);
-            const puzzle = puzzles[randomIndex];
-            currentPuzzle = puzzle.puzzle;
-            currentSolution = puzzle.solution;
+        function createNumberPad() {
+            const numberPad = document.getElementById('numberPad');
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'number-btn';
+                btn.textContent = i;
+                btn.dataset.number = i;
+                btn.disabled = true;
+                numberPad.appendChild(btn);
+            }
+        }
+
+        function setupEventListeners() {
+            // Number pad
+            document.getElementById('numberPad').addEventListener('click', (e) => {
+                if (e.target.classList.contains('number-btn') && !e.target.disabled) {
+                    enterNumber(parseInt(e.target.dataset.number));
+                    addHaptic(e.target);
+                }
+            });
+
+            // Action buttons
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                clearCell();
+                addHaptic(document.getElementById('clearBtn'));
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', () => {
+                undoMove();
+                addHaptic(document.getElementById('undoBtn'));
+            });
+
+            // Control buttons
+            document.getElementById('newGameBtn').addEventListener('click', () => {
+                newGame();
+                addHaptic(document.getElementById('newGameBtn'));
+            });
+
+            document.getElementById('checkBtn').addEventListener('click', () => {
+                checkSolution();
+                addHaptic(document.getElementById('checkBtn'));
+            });
+
+            document.getElementById('hintBtn').addEventListener('click', () => {
+                showHint();
+                addHaptic(document.getElementById('hintBtn'));
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                resetPuzzle();
+                addHaptic(document.getElementById('resetBtn'));
+            });
+
+            // Keyboard support
+            document.addEventListener('keydown', handleKeyboard);
+        }
+
+        function newGame() {
+            if (puzzles.length === 0) {
+                console.error('No puzzles available!');
+                showStatus('No puzzles available', 'error');
+                return;
+            }
             
-            document.getElementById('difficulty').textContent = puzzle.grade + ' - ' + puzzle.difficulty;
+            const randomIndex = Math.floor(Math.random() * puzzles.length);
+            currentPuzzleData = puzzles[randomIndex];
+            currentPuzzle = currentPuzzleData.puzzle;
+            currentSolution = currentPuzzleData.solution;
+            
+            // Update difficulty display with both grade and difficulty
+            const difficultyText = `${currentPuzzleData.grade} - ${currentPuzzleData.difficulty}`;
+            document.getElementById('difficulty').textContent = difficultyText;
+            
+            console.log(`New game started: Puzzle #${currentPuzzleData.publishNumber || randomIndex + 1}`);
+            console.log(`Difficulty: ${difficultyText}`);
             
             createGrid();
-            clearStatus();
             moveHistory = [];
-            lastInputCellIndex = -1;
-            updateInputButtons();
+            updateActionButtons();
+            hideStatus();
         }
 
         function createGrid() {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             userGrid = new Array(81).fill('');
-            selectedCellIndex = -1;
+            selectedCell = -1;
 
             for (let i = 0; i < 81; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
-                cell.tabIndex = 0;
-                
-                const row = Math.floor(i / 9);
-                const col = i % 9;
-                
-                // Add thick borders for 3x3 boxes
-                if (col === 2 || col === 5) {
-                    cell.classList.add('thick-right');
-                }
-                if (row === 2 || row === 5) {
-                    cell.classList.add('thick-bottom');
-                }
+                cell.dataset.index = i;
 
-                const puzzleChar = currentPuzzle[i];
-                if (puzzleChar !== '.') {
-                    cell.textContent = puzzleChar;
+                if (currentPuzzle[i] !== '.') {
+                    cell.textContent = currentPuzzle[i];
                     cell.classList.add('given');
+                    userGrid[i] = currentPuzzle[i];
                 } else {
                     cell.addEventListener('click', () => selectCell(i));
-                    cell.addEventListener('keydown', (e) => handleCellKeydown(e, i));
                 }
 
                 grid.appendChild(cell);
@@ -583,405 +645,313 @@
         }
 
         function selectCell(index) {
+            if (currentPuzzle[index] !== '.') return;
+
             // Clear previous selection
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(cell => cell.classList.remove('selected'));
-            
-            // Select new cell if it's editable
-            if (currentPuzzle[index] === '.') {
-                selectedCellIndex = index;
-                cells[index].classList.add('selected');
-                cells[index].focus();
-                updateInputButtons();
-            } else {
-                selectedCellIndex = -1;
-                updateInputButtons();
-            }
-        }
-
-        function updateInputButtons() {
-            const inputButtons = document.querySelectorAll('.input-btn');
-            const hasSelection = selectedCellIndex >= 0;
-            
-            inputButtons.forEach(btn => {
-                btn.disabled = !hasSelection;
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('selected', 'highlight-same');
             });
-        }
+            highlightedCells.clear();
 
-        function enterNumber(number) {
-            if (selectedCellIndex >= 0 && currentPuzzle[selectedCellIndex] === '.') {
-                const cells = document.querySelectorAll('.cell');
-                const cell = cells[selectedCellIndex];
-                
-                // Save current state for undo
-                const previousValue = userGrid[selectedCellIndex];
-                moveHistory.push({
-                    cellIndex: selectedCellIndex,
-                    previousValue: previousValue,
-                    newValue: number.toString()
+            // Select new cell
+            selectedCell = index;
+            const cells = document.querySelectorAll('.cell');
+            cells[index].classList.add('selected');
+
+            // Highlight cells with same number
+            const value = userGrid[index];
+            if (value) {
+                cells.forEach((cell, i) => {
+                    if (userGrid[i] === value && i !== index) {
+                        cell.classList.add('highlight-same');
+                        highlightedCells.add(i);
+                    }
                 });
-                
-                // Clear last input highlighting
-                clearLastInputHighlight();
-                
-                // Set new value
-                cell.textContent = number.toString();
-                userGrid[selectedCellIndex] = number.toString();
-                cell.classList.add('user-input');
-                cell.classList.add('last-input');
-                lastInputCellIndex = selectedCellIndex;
-                
-                clearStatus();
-                clearErrorHighlights();
-                
-                // Auto-move to next empty cell for better UX
-                setTimeout(() => {
-                    moveToNextEmptyCell();
-                }, 200);
             }
+
+            updateActionButtons();
+            addHaptic(cells[index]);
         }
 
-        function clearSelectedCell() {
-            if (selectedCellIndex >= 0 && currentPuzzle[selectedCellIndex] === '.') {
-                const cells = document.querySelectorAll('.cell');
-                const cell = cells[selectedCellIndex];
-                
-                // Save current state for undo
-                const previousValue = userGrid[selectedCellIndex];
-                if (previousValue !== '') {
-                    moveHistory.push({
-                        cellIndex: selectedCellIndex,
-                        previousValue: previousValue,
-                        newValue: ''
-                    });
-                }
-                
-                // Clear last input highlighting
-                clearLastInputHighlight();
-                
-                cell.textContent = '';
-                userGrid[selectedCellIndex] = '';
-                cell.classList.remove('user-input');
-                cell.classList.add('last-input');
-                lastInputCellIndex = selectedCellIndex;
-                
-                clearStatus();
-                clearErrorHighlights();
-            }
-        }
+        function enterNumber(num) {
+            if (selectedCell < 0 || currentPuzzle[selectedCell] !== '.') return;
 
-        function undoLastMove() {
-            if (moveHistory.length === 0) {
-                showStatus('Nothing to undo', '');
-                return;
-            }
+            const prevValue = userGrid[selectedCell];
+            userGrid[selectedCell] = num.toString();
             
-            const lastMove = moveHistory.pop();
+            moveHistory.push({
+                index: selectedCell,
+                prevValue: prevValue,
+                newValue: num.toString()
+            });
+
+            updateCell(selectedCell);
+            updateActionButtons();
+            clearErrors();
+            
+            // Auto-advance to next empty cell
+            setTimeout(() => autoAdvance(), 150);
+        }
+
+        function clearCell() {
+            if (selectedCell < 0 || currentPuzzle[selectedCell] !== '.') return;
+
+            const prevValue = userGrid[selectedCell];
+            if (prevValue) {
+                moveHistory.push({
+                    index: selectedCell,
+                    prevValue: prevValue,
+                    newValue: ''
+                });
+                userGrid[selectedCell] = '';
+                updateCell(selectedCell);
+                updateActionButtons();
+                clearErrors();
+            }
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+
+            const move = moveHistory.pop();
+            userGrid[move.index] = move.prevValue;
+            updateCell(move.index);
+            selectCell(move.index);
+            updateActionButtons();
+            clearErrors();
+            
+            showStatus('Move undone', 'normal', 1500);
+        }
+
+        function updateCell(index) {
             const cells = document.querySelectorAll('.cell');
-            const cell = cells[lastMove.cellIndex];
-            
-            // Clear current highlighting
-            clearLastInputHighlight();
-            
-            // Restore previous value
-            cell.textContent = lastMove.previousValue;
-            userGrid[lastMove.cellIndex] = lastMove.previousValue;
-            
-            if (lastMove.previousValue === '') {
-                cell.classList.remove('user-input');
+            const cell = cells[index];
+            const value = userGrid[index];
+
+            cell.textContent = value;
+            if (value) {
+                cell.classList.add('user-input');
             } else {
-                cell.classList.add('user-input');
-            }
-            
-            // Highlight the undone cell
-            cell.classList.add('last-input');
-            lastInputCellIndex = lastMove.cellIndex;
-            
-            // Select the undone cell
-            selectCell(lastMove.cellIndex);
-            
-            clearStatus();
-            clearErrorHighlights();
-            showStatus('Move undone', '');
-        }
-
-        function clearLastInputHighlight() {
-            if (lastInputCellIndex >= 0) {
-                const cells = document.querySelectorAll('.cell');
-                cells[lastInputCellIndex].classList.remove('last-input');
+                cell.classList.remove('user-input');
             }
         }
 
-        function moveToNextEmptyCell() {
-            const cells = document.querySelectorAll('.cell');
-            
+        function autoAdvance() {
             // Find next empty cell
-            for (let i = selectedCellIndex + 1; i < 81; i++) {
-                if (currentPuzzle[i] === '.') {
+            for (let i = selectedCell + 1; i < 81; i++) {
+                if (currentPuzzle[i] === '.' && !userGrid[i]) {
                     selectCell(i);
                     return;
                 }
             }
-            
-            // If no cell found after current, search from beginning
-            for (let i = 0; i < selectedCellIndex; i++) {
-                if (currentPuzzle[i] === '.') {
+            // Wrap around
+            for (let i = 0; i < selectedCell; i++) {
+                if (currentPuzzle[i] === '.' && !userGrid[i]) {
                     selectCell(i);
                     return;
                 }
             }
-            
-            // No empty cells found
-            selectedCellIndex = -1;
-            cells.forEach(cell => cell.classList.remove('selected'));
-            updateInputButtons();
         }
 
-        function handleCellKeydown(e, index) {
-            // Handle number keys
-            if (e.key >= '1' && e.key <= '9') {
-                selectCell(index);
-                enterNumber(parseInt(e.key));
-                e.preventDefault();
-            }
+        function checkSolution() {
+            clearErrors();
             
-            // Handle backspace/delete
-            if (e.key === 'Backspace' || e.key === 'Delete') {
-                selectCell(index);
-                clearSelectedCell();
-                e.preventDefault();
-            }
-            
-            // Handle arrow keys for navigation
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                navigateWithArrows(e.key, index);
-                e.preventDefault();
+            const errors = findErrors();
+            const emptyCells = countEmptyCells();
+
+            if (errors.length > 0) {
+                highlightErrors(errors);
+                showStatus(`${errors.length} conflicts found`, 'error', 3000);
+            } else if (emptyCells > 0) {
+                showStatus(`${emptyCells} cells remaining`, 'normal', 2000);
+            } else {
+                showStatus('🎉 Puzzle solved!', 'success');
             }
         }
 
-        function navigateWithArrows(key, currentIndex) {
-            let newIndex = currentIndex;
-            const row = Math.floor(currentIndex / 9);
-            const col = currentIndex % 9;
-            
-            switch(key) {
-                case 'ArrowUp':
-                    if (row > 0) newIndex = currentIndex - 9;
-                    break;
-                case 'ArrowDown':
-                    if (row < 8) newIndex = currentIndex + 9;
-                    break;
-                case 'ArrowLeft':
-                    if (col > 0) newIndex = currentIndex - 1;
-                    break;
-                case 'ArrowRight':
-                    if (col < 8) newIndex = currentIndex + 1;
-                    break;
-            }
-            
-            if (newIndex !== currentIndex) {
-                selectCell(newIndex);
-            }
-        }
+        function findErrors() {
+            const errors = new Set();
 
-        function getCurrentGrid() {
-            const cells = document.querySelectorAll('.cell');
-            const grid = [];
-            
+            // Check rows, columns, and boxes
             for (let i = 0; i < 81; i++) {
-                const cellText = cells[i].textContent;
-                grid[i] = cellText || '';
+                if (!userGrid[i]) continue;
+
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+
+                // Check row
+                for (let c = 0; c < 9; c++) {
+                    const idx = row * 9 + c;
+                    if (idx !== i && userGrid[idx] === userGrid[i]) {
+                        errors.add(i);
+                        errors.add(idx);
+                    }
+                }
+
+                // Check column
+                for (let r = 0; r < 9; r++) {
+                    const idx = r * 9 + col;
+                    if (idx !== i && userGrid[idx] === userGrid[i]) {
+                        errors.add(i);
+                        errors.add(idx);
+                    }
+                }
+
+                // Check 3x3 box
+                const boxRow = Math.floor(box / 3) * 3;
+                const boxCol = (box % 3) * 3;
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        const idx = (boxRow + r) * 9 + (boxCol + c);
+                        if (idx !== i && userGrid[idx] === userGrid[i]) {
+                            errors.add(i);
+                            errors.add(idx);
+                        }
+                    }
+                }
             }
-            
-            return grid;
+
+            return Array.from(errors);
         }
 
-        function findConflicts(grid) {
-            const conflicts = new Set();
-            
-            // Check rows
-            for (let row = 0; row < 9; row++) {
-                const seen = {};
-                for (let col = 0; col < 9; col++) {
-                    const index = row * 9 + col;
-                    const val = grid[index];
-                    if (val && val !== '') {
-                        if (seen[val]) {
-                            conflicts.add(index);
-                            conflicts.add(seen[val]);
-                        } else {
-                            seen[val] = index;
-                        }
-                    }
-                }
-            }
-            
-            // Check columns
-            for (let col = 0; col < 9; col++) {
-                const seen = {};
-                for (let row = 0; row < 9; row++) {
-                    const index = row * 9 + col;
-                    const val = grid[index];
-                    if (val && val !== '') {
-                        if (seen[val]) {
-                            conflicts.add(index);
-                            conflicts.add(seen[val]);
-                        } else {
-                            seen[val] = index;
-                        }
-                    }
-                }
-            }
-            
-            // Check 3x3 boxes
-            for (let boxRow = 0; boxRow < 3; boxRow++) {
-                for (let boxCol = 0; boxCol < 3; boxCol++) {
-                    const seen = {};
-                    for (let row = 0; row < 3; row++) {
-                        for (let col = 0; col < 3; col++) {
-                            const index = (boxRow * 3 + row) * 9 + (boxCol * 3 + col);
-                            const val = grid[index];
-                            if (val && val !== '') {
-                                if (seen[val]) {
-                                    conflicts.add(index);
-                                    conflicts.add(seen[val]);
-                                } else {
-                                    seen[val] = index;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return Array.from(conflicts);
-        }
-
-        function highlightErrors(errorCells) {
+        function highlightErrors(errors) {
             const cells = document.querySelectorAll('.cell');
-            errorCells.forEach(index => {
+            errors.forEach(index => {
                 cells[index].classList.add('error');
             });
         }
 
-        function clearErrorHighlights() {
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(cell => {
+        function clearErrors() {
+            document.querySelectorAll('.cell.error').forEach(cell => {
                 cell.classList.remove('error');
             });
         }
 
-        function checkSolution() {
-            clearErrorHighlights();
-            
-            const currentGrid = getCurrentGrid();
-            const conflicts = findConflicts(currentGrid);
-            
-            let hasEmptyCells = false;
-            let emptyCellCount = 0;
-            
-            // Count empty cells
+        function countEmptyCells() {
+            let count = 0;
             for (let i = 0; i < 81; i++) {
-                if (currentGrid[i] === '') {
-                    hasEmptyCells = true;
-                    emptyCellCount++;
+                if (currentPuzzle[i] === '.' && !userGrid[i]) {
+                    count++;
                 }
             }
-            
-            // Check for conflicts first (Sudoku rule violations)
-            if (conflicts.length > 0) {
-                highlightErrors(conflicts);
-                showStatus(`❌ Found ${conflicts.length} conflicting cells! Check highlighted numbers.`, 'error');
-                return;
-            }
-            
-            // Check if puzzle is complete
-            if (hasEmptyCells) {
-                showStatus(`🔍 Keep going! ${emptyCellCount} cells remaining`, '');
-                return;
-            }
-            
-            // If no conflicts and no empty cells, puzzle is solved!
-            showStatus('🎉 Congratulations! You solved it perfectly!', 'success');
+            return count;
         }
 
         function showHint() {
             const emptyCells = [];
             for (let i = 0; i < 81; i++) {
-                if (userGrid[i] === '') {
+                if (currentPuzzle[i] === '.' && !userGrid[i]) {
                     emptyCells.push(i);
                 }
             }
-            
-            if (emptyCells.length > 0) {
-                const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                const cells = document.querySelectorAll('.cell');
-                const hintCell = cells[randomIndex];
-                const hintValue = currentSolution[randomIndex];
-                
-                // Save for undo
-                moveHistory.push({
-                    cellIndex: randomIndex,
-                    previousValue: '',
-                    newValue: hintValue
-                });
-                
-                clearLastInputHighlight();
-                
-                hintCell.textContent = hintValue;
-                userGrid[randomIndex] = hintValue;
-                hintCell.classList.add('user-input');
-                hintCell.classList.add('last-input');
-                lastInputCellIndex = randomIndex;
-                
-                showStatus('💡 Hint added!', '');
-                clearErrorHighlights();
-            } else {
-                showStatus('🎯 No empty cells to hint!', '');
+
+            if (emptyCells.length === 0) {
+                showStatus('No empty cells', 'normal', 1500);
+                return;
             }
+
+            const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            const hintValue = currentSolution[randomIndex];
+            
+            userGrid[randomIndex] = hintValue;
+            moveHistory.push({
+                index: randomIndex,
+                prevValue: '',
+                newValue: hintValue
+            });
+
+            updateCell(randomIndex);
+            selectCell(randomIndex);
+            updateActionButtons();
+            
+            showStatus('Hint added', 'normal', 1500);
         }
 
         function resetPuzzle() {
             createGrid();
-            clearStatus();
             moveHistory = [];
-            lastInputCellIndex = -1;
-            updateInputButtons();
+            updateActionButtons();
+            hideStatus();
         }
 
-        function showStatus(message, className) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = 'status ' + className;
+        function updateActionButtons() {
+            const hasSelection = selectedCell >= 0;
+            const hasHistory = moveHistory.length > 0;
+            const hasValue = hasSelection && userGrid[selectedCell];
+
+            // Number buttons
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.disabled = !hasSelection;
+            });
+
+            // Action buttons
+            document.getElementById('clearBtn').disabled = !hasValue;
+            document.getElementById('undoBtn').disabled = !hasHistory;
         }
 
-        function clearStatus() {
-            const status = document.getElementById('status');
-            status.textContent = '';
-            status.className = 'status';
-        }
+        function handleKeyboard(e) {
+            if (selectedCell < 0) return;
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Global keyboard shortcuts
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'z') {
-                    undoLastMove();
-                    e.preventDefault();
-                }
+            if (e.key >= '1' && e.key <= '9') {
+                enterNumber(parseInt(e.key));
+                e.preventDefault();
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                clearCell();
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
+                       e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                navigateGrid(e.key);
+                e.preventDefault();
             }
+        }
+
+        function navigateGrid(key) {
+            const row = Math.floor(selectedCell / 9);
+            const col = selectedCell % 9;
+            let newRow = row;
+            let newCol = col;
+
+            switch (key) {
+                case 'ArrowUp': newRow = Math.max(0, row - 1); break;
+                case 'ArrowDown': newRow = Math.min(8, row + 1); break;
+                case 'ArrowLeft': newCol = Math.max(0, col - 1); break;
+                case 'ArrowRight': newCol = Math.min(8, col + 1); break;
+            }
+
+            const newIndex = newRow * 9 + newCol;
+            if (currentPuzzle[newIndex] === '.') {
+                selectCell(newIndex);
+            }
+        }
+
+        function showStatus(message, type = 'normal', duration = 0) {
+            const statusBar = document.getElementById('statusBar');
+            const statusText = document.getElementById('statusText');
             
-            // Number keys when no cell is focused
-            if (e.key >= '1' && e.key <= '9' && selectedCellIndex >= 0) {
-                if (!e.target.classList.contains('cell')) {
-                    enterNumber(parseInt(e.key));
-                    e.preventDefault();
-                }
+            statusText.textContent = message;
+            statusBar.className = 'status-bar show ' + type;
+            
+            if (duration > 0) {
+                setTimeout(hideStatus, duration);
             }
-        });
+        }
 
-        // Initialize the game when page loads
-        initGame();
+        function hideStatus() {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.classList.remove('show');
+        }
+
+        function addHaptic(element) {
+            element.classList.add('haptic');
+            setTimeout(() => element.classList.remove('haptic'), 100);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎮 Sudoku Game Initializing...');
+            init();
+        });
     </script>
 </body>
 </html>
